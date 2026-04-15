@@ -53,11 +53,11 @@ export default function Chat({ onBack, onNavigate }) {
         </div>
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex items-end gap-3 max-w-[85%] ${msg.isMe ? 'self-end flex-row-reverse' : ''}`}>
+          <div key={i} className={`flex items-end gap-3 max-w-[85%] ${msg.is_me ? 'self-end flex-row-reverse' : ''}`}>
             <div className="size-8 rounded-full bg-primary/20 flex-shrink-0 bg-cover bg-center border border-primary/10" style={{ backgroundImage: `url('${msg.avatar}')` }}></div>
-            <div className={`flex flex-col gap-1 ${msg.isMe ? 'items-end' : ''}`}>
+            <div className={`flex flex-col gap-1 ${msg.is_me ? 'items-end' : ''}`}>
               <span className="text-[11px] font-medium text-slate-500 dark:text-primary/60 ml-1">{msg.sender}</span>
-              <div className={`${msg.isMe ? 'bg-primary text-white rounded-br-none' : 'bg-slate-200 dark:bg-primary/20 text-slate-900 dark:text-slate-100 rounded-bl-none'} px-4 py-2.5 rounded-2xl shadow-sm`}>
+              <div className={`${msg.is_me ? 'bg-primary text-white rounded-br-none' : 'bg-slate-200 dark:bg-primary/20 text-slate-900 dark:text-slate-100 rounded-bl-none'} px-4 py-2.5 rounded-2xl shadow-sm`}>
                 <p className="text-sm leading-relaxed">{msg.text}</p>
               </div>
             </div>

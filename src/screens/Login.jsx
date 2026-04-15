@@ -2,6 +2,31 @@ import { useState } from "react";
 
 export default function Login({ onLogin, onRegister, onForgotPassword }) {
   const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (res.ok) {
+        localStorage.setItem('user', JSON.stringify({ username }));
+        onLogin();
+      } else {
+        alert('Usuário ou senha inválidos');
+      }
+    } catch (err) {
+      alert('Erro ao conectar');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="relative flex h-full min-h-screen w-full max-w-[430px] flex-col bg-background-light dark:bg-background-dark overflow-x-hidden border-x border-primary/10 shadow-2xl mx-auto">
@@ -24,12 +49,24 @@ export default function Login({ onLogin, onRegister, onForgotPassword }) {
       <div className="flex flex-col gap-4 px-6 py-3 w-full">
         <label className="flex flex-col w-full">
           <p className="text-slate-800 dark:text-slate-200 text-sm font-semibold leading-normal pb-2 px-1">Usuário</p>
-          <input className="flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-primary/30 bg-white dark:bg-primary/10 h-14 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-[15px] text-base font-normal" placeholder="Seu usuário" type="text" />
+          <input 
+            className="flex w-full rounded-xl text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-slate-300 dark:border-primary/30 bg-white dark:bg-primary/10 h-14 placeholder:text-slate-400 dark:placeholder:text-slate-500 p-[15px] text-base font-normal" 
+            placeholder="Seu usuário" 
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
         </label>
         <label className="flex flex-col w-full">
           <p className="text-slate-800 dark:text-slate-200 text-sm font-semibold leading-normal pb-2 px-1">Senha</p>
           <div className="flex w-full items-stretch rounded-xl border border-slate-300 dark:border-primary/30 bg-white dark:bg-primary/10 overflow-hidden focus-within:ring-2 focus-within:ring-primary/50">
-            <input className="flex w-full border-0 bg-transparent h-14 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 p-[15px] text-base font-normal focus:ring-0" placeholder="Digite sua senha" type={showPassword ? "text" : "password"} />
+            <input 
+              className="flex w-full border-0 bg-transparent h-14 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 p-[15px] text-base font-normal focus:ring-0" 
+              placeholder="Digite sua senha" 
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <button className="text-slate-400 dark:text-primary/60 flex items-center justify-center px-4" type="button" onClick={() => setShowPassword(!showPassword)}>
               <span className="material-symbols-outlined">{showPassword ? 'visibility_off' : 'visibility'}</span>
             </button>
@@ -42,8 +79,12 @@ export default function Login({ onLogin, onRegister, onForgotPassword }) {
       </div>
 
       <div className="px-6 pt-8 pb-4">
-        <button onClick={onLogin} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98]">
-          Entrar
+        <button 
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98]"
+        >
+          {loading ? 'Entrando...' : 'Entrar'}
         </button>
       </div>
 

@@ -1,31 +1,58 @@
+import { useState, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 
 export default function Events({ onBack, onNavigate }) {
-  const events = [
-    {
-      title: 'Acolhimento Novatos',
-      date: '15 de Fevereiro • 08:00',
-      team: 'Equipe: Liderança 3º Ano',
-      description: 'Boas-vindas aos novos alunos com dinâmicas de quebra-gelo, tour pela escola e integração com veteranos.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAknyIRqilXHClkWISpAYF51DsreWbQY-FrpNyYj25K6iEKXBiN49bisocjMvQ6FFjkMhvg1C3fgOP4end0L8i-vC6XQ-gjwCGatLPdReaAfxlulg6kiDYfmVv1JXASfyE3kF8jjTzOebH4n5FeCjeoq0WiGEmnQxSakSZ0ebKillz8AD9gJ-rOqNoSgCoH_vge_1dLNRCM_ipdV6-6nG3_ToEW_C2p3N02RS6osWM8jYe2lT9EqMi8qPYlvK247L71mTgpCuv9Pg',
-      tag: 'Destaque'
-    },
-    {
-      title: 'Jogos Internos 2024',
-      date: '10 de Março • Todo o dia',
-      team: 'Equipe: Grêmio Estudantil',
-      description: 'Competições esportivas entre turmas. Precisamos de voluntários para arbitragem e organização de torcidas.',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAJLwvyEXeIj4uRk_P0Cyy_pyEs2QK1VBP1KmzS93VvpTBJV2gPpZxIydWRU-nSCIFJFEMpskN-wUpwFyZdQYaliHoWmrRSD9fy7a1t2audV3BpsDRUpErdnyDgufpqM61OfoEDxtX7hxSOndMc-vfna6CUEoeXhGzA6nDk3SO0oBn3TncrStQNT067igJaTea4YbtgF-5PpkEAcUzwdr--Tbcb4bO6RNGhZgTUyVTatZeRKKOyLAEyURuHBU5jzYCRfsJ3MTCo2g',
-      icon: 'sports_basketball'
-    },
-    {
-      title: 'Reunião de Líderes',
-      date: '05 de Fevereiro • 14:00',
-      description: 'Planejamento estratégico das atividades do primeiro semestre.',
-      tag: 'Privado',
-      isPrivate: true
+  const [events, setEvents] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [filter, setFilter] = useState('open');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Get current user
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          const currentUser = data.find(u => u.name === userData.username);
+          setUser(currentUser);
+          loadSubscriptions(currentUser?.id);
+        })
+        .catch(err => console.error(err));
     }
-  ];
+
+    // Get all events
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => setEvents(data.filter(e => !e.is_private)))
+      .catch(err => console.error(err));
+  }, []);
+
+  const loadSubscriptions = (userId) => {
+    const enrolledEventIds = JSON.parse(localStorage.getItem(`user_${userId}_subscriptions`) || '[]');
+    setSubscriptions(enrolledEventIds);
+  };
+
+  const toggleSubscription = (eventId) => {
+    if (!user) return;
+    
+    const userId = user.id;
+    const enrolled = subscriptions.includes(eventId);
+    
+    if (enrolled) {
+      setSubscriptions(subscriptions.filter(id => id !== eventId));
+      localStorage.setItem(`user_${userId}_subscriptions`, JSON.stringify(subscriptions.filter(id => id !== eventId)));
+    } else {
+      const newSubscriptions = [...subscriptions, eventId];
+      setSubscriptions(newSubscriptions);
+      localStorage.setItem(`user_${userId}_subscriptions`, JSON.stringify(newSubscriptions));
+    }
+  };
+
+  const filteredEvents = filter === 'open'
+    ? events.filter(e => !subscriptions.includes(e.id))
+    : events.filter(e => subscriptions.includes(e.id));
 
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-[430px] mx-auto shadow-2xl overflow-hidden pb-20 bg-background-light dark:bg-background-dark border-x border-primary/10">
@@ -43,12 +70,12 @@ export default function Events({ onBack, onNavigate }) {
         </div>
         <div className="px-4 pb-0">
           <div className="flex gap-6">
-            <a className="flex flex-col items-center justify-center border-b-2 border-primary text-primary pb-3 pt-2" href="#">
+            <button onClick={() => setFilter('open')} className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 ${filter === 'open' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
               <span className="text-sm font-bold">Explorar</span>
-            </a>
-            <a className="flex flex-col items-center justify-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2" href="#">
+            </button>
+            <button onClick={() => setFilter('registered')} className={`flex flex-col items-center justify-center border-b-2 pb-3 pt-2 ${filter === 'registered' ? 'border-primary text-primary' : 'border-transparent text-slate-500 dark:text-slate-400'}`}>
               <span className="text-sm font-medium">Minhas Inscrições</span>
-            </a>
+            </button>
           </div>
         </div>
       </header>
@@ -56,53 +83,63 @@ export default function Events({ onBack, onNavigate }) {
       <main className="flex-1 overflow-y-auto px-4 py-6 no-scrollbar">
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-slate-900 dark:text-white text-xl font-bold">Próximos Eventos</h2>
-            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded">3 Ativos</span>
+            <h2 className="text-slate-900 dark:text-white text-xl font-bold">
+              {filter === 'open' ? 'Eventos Disponíveis' : 'Meus Eventos'}
+            </h2>
+            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded">{filteredEvents.length}</span>
           </div>
           <div className="space-y-6">
-            {events.map((event, i) => (
-              <div key={i} className={`group flex flex-col rounded-xl overflow-hidden bg-white dark:bg-primary/5 border border-primary/10 shadow-sm ${event.isPrivate ? 'opacity-80' : ''}`}>
-                {event.image && (
-                  <div className="h-48 w-full bg-cover bg-center" style={{ backgroundImage: `url('${event.image}')` }}></div>
-                )}
-                <div className="p-4 flex flex-col gap-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-slate-900 dark:text-white text-lg font-bold">{event.title}</h3>
-                      <div className="flex items-center gap-1 text-primary text-xs font-semibold mt-1">
-                        <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                        {event.date}
+            {filteredEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 block mb-2">event_note</span>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                  {filter === 'open' ? 'Nenhum evento disponível' : 'Você não se inscreveu em nenhum evento'}
+                </p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                  {filter === 'open' ? 'Novos eventos em breve!' : 'Explore eventos e se inscreva'}
+                </p>
+              </div>
+            ) : (
+              filteredEvents.map((event) => (
+                <div key={event.id} className="group flex flex-col rounded-xl overflow-hidden bg-white dark:bg-primary/5 border border-primary/10 shadow-sm">
+                  {event.image && (
+                    <div className="h-48 w-full bg-cover bg-center" style={{ backgroundImage: `url('${event.image}')` }}></div>
+                  )}
+                  <div className="p-4 flex flex-col gap-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-slate-900 dark:text-white text-lg font-bold">{event.title}</h3>
+                        <div className="flex items-center gap-1 text-primary text-xs font-semibold mt-1">
+                          <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                          {event.date} • {event.time}
+                        </div>
                       </div>
                     </div>
-                    {event.tag && (
-                      <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${event.tag === 'Destaque' ? 'bg-primary/20 text-primary' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>{event.tag}</span>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    {event.team && (
-                      <div className="flex items-center gap-2">
-                        <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-[16px] text-primary">{event.icon || 'groups'}</span>
+                    <div className="space-y-2">
+                      {event.team && (
+                        <div className="flex items-center gap-2">
+                          <div className="size-6 rounded-full bg-primary/20 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-[16px] text-primary">groups</span>
+                          </div>
+                          <p className="text-slate-600 dark:text-slate-300 text-sm font-medium">{event.team}</p>
                         </div>
-                        <p className="text-slate-600 dark:text-slate-300 text-sm font-medium">{event.team}</p>
-                      </div>
-                    )}
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{event.description}</p>
-                    {event.isPrivate && (
-                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                        <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                        <span className="text-xs">Apenas para Representantes</span>
-                      </div>
-                    )}
-                  </div>
-                  {!event.isPrivate && (
-                    <button className="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm shadow-lg shadow-primary/20 active:scale-[0.98] transition-all">
-                      Inscrever-se para ajudar
+                      )}
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{event.description}</p>
+                    </div>
+                    <button 
+                      onClick={() => toggleSubscription(event.id)}
+                      className={`w-full py-3 rounded-lg font-bold text-sm shadow-lg transition-all active:scale-[0.98] ${
+                        subscriptions.includes(event.id)
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100'
+                          : 'bg-primary text-white shadow-primary/20'
+                      }`}
+                    >
+                      {subscriptions.includes(event.id) ? '✓ Inscrito' : 'Inscrever-se para ajudar'}
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
       </main>

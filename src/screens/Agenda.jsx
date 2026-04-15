@@ -1,8 +1,44 @@
+import { useState, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 
 export default function Agenda({ onNavigate }) {
-  const days = Array.from({ length: 31 }, (_, i) => i + 1);
-  const events = [7, 10]; // Days with events
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date().getDate());
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => setEvents(data))
+      .catch(err => console.error(err));
+  }, []);
+
+  const getDaysInMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const monthName = currentMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+  const daysInMonth = getDaysInMonth(currentMonth);
+  const firstDay = getFirstDayOfMonth(currentMonth);
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  // Get events for selected date
+  const selectedDateEvents = events.filter(e => {
+    const eventDate = new Date(e.date).getDate();
+    return eventDate === selectedDate;
+  });
 
   return (
     <div className="relative flex min-h-screen w-full flex-col max-w-[430px] mx-auto bg-background-light dark:bg-background-dark shadow-2xl overflow-hidden border-x border-primary/10">
@@ -22,11 +58,11 @@ export default function Agenda({ onNavigate }) {
         <div className="p-4">
           <div className="bg-white dark:bg-primary/5 rounded-xl border border-primary/10 p-4 shadow-sm">
             <div className="flex items-center justify-between mb-6">
-              <button className="p-2 hover:bg-primary/10 rounded-full transition-colors">
+              <button onClick={prevMonth} className="p-2 hover:bg-primary/10 rounded-full transition-colors">
                 <span className="material-symbols-outlined text-primary">chevron_left</span>
               </button>
-              <h2 className="text-lg font-semibold">Maio 2024</h2>
-              <button className="p-2 hover:bg-primary/10 rounded-full transition-colors">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 capitalize">{monthName}</h2>
+              <button onClick={nextMonth} className="p-2 hover:bg-primary/10 rounded-full transition-colors">
                 <span className="material-symbols-outlined text-primary">chevron_right</span>
               </button>
             </div>
@@ -36,60 +72,57 @@ export default function Agenda({ onNavigate }) {
               ))}
             </div>
             <div className="grid grid-cols-7 gap-1">
-              <div className="h-10"></div><div className="h-10"></div><div className="h-10"></div>
+              {Array(firstDay).fill(null).map((_, i) => (
+                <div key={`empty-${i}`} className="h-10"></div>
+              ))}
               {days.map(day => (
                 <button 
                   key={day} 
-                  className={`h-10 flex items-center justify-center rounded-lg text-sm font-medium relative transition-colors ${day === 5 ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30' : 'hover:bg-primary/20'}`}
+                  onClick={() => setSelectedDate(day)}
+                  className={`h-10 flex items-center justify-center rounded-lg text-sm font-medium relative transition-colors ${day === selectedDate ? 'bg-primary text-white font-bold shadow-lg shadow-primary/30' : 'hover:bg-primary/20 text-slate-900 dark:text-slate-100'}`}
                 >
                   {day}
-                  {events.includes(day) && <span className="absolute bottom-1.5 size-1 bg-primary rounded-full"></span>}
+                  {events.some(e => new Date(e.date).getDate() === day) && <span className="absolute bottom-1.5 size-1 bg-primary rounded-full"></span>}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="px-4 mt-2">
+        <div className="px-4 mt-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold">Novo Evento</h3>
-            <span className="text-sm text-primary font-semibold">5 de Maio</span>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Eventos do Dia</h3>
+            <span className="text-sm text-primary font-semibold">{selectedDate} de {monthName.split(' ')[0]}</span>
           </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1 ml-1">Título do Evento</label>
-              <input className="w-full bg-white dark:bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400" placeholder="Ex: Reunião do Protagonismo" type="text" />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1 ml-1">Mensagem (Máx 400 caracteres)</label>
-              <textarea className="w-full bg-white dark:bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-slate-400 resize-none" maxLength={400} placeholder="Descreva os detalhes do evento..." rows={4}></textarea>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1 ml-1">Foto ou Anexo</label>
-              <div className="relative group cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 aspect-video flex flex-col items-center justify-center gap-2 hover:bg-primary/10 transition-colors">
-                <span className="material-symbols-outlined text-4xl text-primary/60">add_a_photo</span>
-                <p className="text-xs font-medium text-primary/60 uppercase tracking-wider">Clique para adicionar foto</p>
+          <div className="space-y-3">
+            {selectedDateEvents.length === 0 ? (
+              <div className="text-center py-8">
+                <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 block mb-2">event_note</span>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">Nenhum evento neste dia</p>
               </div>
-            </div>
-            <div className="bg-primary/10 rounded-xl p-4 border border-primary/20 mb-8">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary">verified_user</span>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Protagonismo Líder</span>
-                    <span className="text-[10px] uppercase text-primary font-bold tracking-tighter">Acesso Exclusivo</span>
+            ) : (
+              selectedDateEvents.map((event, i) => (
+                <div key={i} className="bg-white dark:bg-primary/5 border border-primary/10 rounded-xl p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100">{event.title}</h4>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold uppercase ${event.is_private ? 'bg-blue-500/20 text-blue-600' : 'bg-primary/20 text-primary'}`}>
+                      {event.is_private ? 'Privado' : 'Público'}
+                    </span>
                   </div>
+                  <div className="flex items-center gap-2 text-primary text-xs font-semibold mb-2">
+                    <span className="material-symbols-outlined text-[16px]">schedule</span>
+                    {event.time}
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">{event.description}</p>
+                  {event.team && (
+                    <div className="mt-3 pt-3 border-t border-primary/10 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="material-symbols-outlined text-[16px]">groups</span>
+                      {event.team}
+                    </div>
+                  )}
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input className="sr-only peer" type="checkbox" value="" />
-                  <div className="w-11 h-6 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  <span className="ml-3 text-sm font-semibold">Tornar Público</span>
-                </label>
-              </div>
-            </div>
-            <button className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] mb-8">
-              Salvar na Agenda
-            </button>
+              ))
+            )}
           </div>
         </div>
       </main>
