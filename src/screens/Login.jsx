@@ -16,7 +16,12 @@ export default function Login({ onLogin, onRegister, onForgotPassword }) {
         body: JSON.stringify({ username, password })
       });
       if (res.ok) {
-        localStorage.setItem('user', JSON.stringify({ username }));
+        const data = await res.json();
+        localStorage.setItem('user', JSON.stringify({
+          username,
+          token: data.token,
+          ...data.user
+        }));
         onLogin();
       } else {
         alert('Usuário ou senha inválidos');

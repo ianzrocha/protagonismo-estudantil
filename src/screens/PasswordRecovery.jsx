@@ -18,7 +18,7 @@ export default function PasswordRecovery({ onBack }) {
         <div className="mb-8">
           <h1 className="text-3xl font-bold leading-tight tracking-tight mb-3">Esqueceu sua senha?</h1>
           <p className="text-slate-600 dark:text-slate-400 text-base leading-relaxed">
-            Não se preocupe, acontece com todos! Insira seu nome de usuário abaixo para receber as instruções de redefinição.
+            Relaxe, acontece com todos! Insira seu nome de usuário abaixo para receber as instruções de redefinição.
           </p>
         </div>
 
