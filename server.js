@@ -196,7 +196,14 @@ async function startServer() {
     // Permission checks
     if (currentUser.role === 'Desenvolvedor') {
       // Desenvolvedores podem alterar qualquer usuário para qualquer cargo
-      if (!['Protagonista', 'Líder', 'Desenvolvedor'].includes(role)) {
+      const normalizedRole = role.normalize('NFC');
+      const allowedRoles = ['Protagonista', 'Líder', 'Desenvolvedor'].map(r => r.normalize('NFC'));
+      // Also check for common misspellings/encodings
+      const isValidRole = allowedRoles.includes(normalizedRole) ||
+                         ['Protagonista', 'Lider', 'Líder', 'Desenvolvedor'].includes(role) ||
+                         (role.startsWith('L') && (role.includes('der') || role.includes('íder'))) ||
+                         role.startsWith('Desenvolvedor');
+      if (!isValidRole) {
         return res.status(400).json({ status: "error", message: "Cargo inválido" });
       }
     } else if (currentUser.role === 'Líder') {
@@ -204,9 +211,18 @@ async function startServer() {
       if (targetUser.role !== 'Protagonista') {
         return res.status(403).json({ status: "error", message: "Você não tem permissão para alterar este usuário" });
       }
-      // Líderes só podem promover para Protagonista (não podem alterar cargos)
-      if (role !== 'Protagonista') {
-        return res.status(403).json({ status: "error", message: "Você só pode gerenciar Protagonistas" });
+      // Líderes podem promover Protagonistas para Líder, mas não para Desenvolvedor
+      const normalizedRole = role.normalize('NFC'); // Normalize Unicode characters
+      const allowedRoles = ['Protagonista', 'Líder'].map(r => r.normalize('NFC'));
+      // Also check for common misspellings/encodings
+      const isValidRole = allowedRoles.includes(normalizedRole) ||
+                         role === 'Lider' ||
+                         role === 'Líder' ||
+                         normalizedRole.includes('Lider') ||
+                         normalizedRole.includes('Líder') ||
+                         role.startsWith('L') && (role.includes('der') || role.includes('íder'));
+      if (!isValidRole) {
+        return res.status(403).json({ status: "error", message: "Você só pode promover Protagonistas para Líder" });
       }
     } else {
       return res.status(403).json({ status: "error", message: "Acesso negado" });

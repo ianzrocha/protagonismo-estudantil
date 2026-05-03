@@ -61,7 +61,7 @@ export default function RoleManagement({ onBack, onNavigate }) {
     }
 
     if (currentUser.role === 'Líder') {
-      return ['Protagonista']; // Líderes só podem promover para Protagonista
+      return ['Protagonista', 'Líder']; // Líderes podem promover Protagonistas para Líder
     }
 
     return [];

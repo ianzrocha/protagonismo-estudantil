@@ -40,7 +40,7 @@ export default function Home({ onNavigate }) {
           <section className="mt-6 px-4">
             <h2 className="text-lg font-bold tracking-tight mb-3">Ações Rápidas</h2>
             <div className="flex flex-col gap-3">
-              <button onClick={() => onNavigate('agenda')} className="flex items-center justify-between w-full p-4 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
+              <button onClick={() => onNavigate('events')} className="flex items-center justify-between w-full p-4 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
                 <div className="flex items-center gap-4">
                   <div className="bg-white/20 p-2 rounded-xl">
                     <span className="material-symbols-outlined">add_circle</span>

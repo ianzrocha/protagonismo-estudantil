@@ -5,8 +5,23 @@ export default function Agenda({ onNavigate }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
   const [events, setEvents] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
+    // Get current user
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      fetch('/api/users')
+        .then(res => res.json())
+        .then(data => {
+          const currentUser = data.find(u => u.name === userData.username);
+          setUser(currentUser);
+        })
+        .catch(err => console.error(err));
+    }
+
+    // Get all events
     fetch('/api/events')
       .then(res => res.json())
       .then(data => setEvents(data))
@@ -120,12 +135,28 @@ export default function Agenda({ onNavigate }) {
                       {event.team}
                     </div>
                   )}
+                  <button 
+                    onClick={() => onNavigate('events')}
+                    className="mt-3 w-full py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/20 transition-colors"
+                  >
+                    Ver Detalhes e Inscrever-se
+                  </button>
                 </div>
               ))
             )}
           </div>
         </div>
       </main>
+
+      {/* Floating Action Button for Leaders */}
+      {user?.role === 'Líder' && (
+        <button 
+          onClick={() => onNavigate('events')}
+          className="fixed bottom-24 right-4 size-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 flex items-center justify-center hover:bg-primary/90 transition-colors z-10"
+        >
+          <span className="material-symbols-outlined">add</span>
+        </button>
+      )}
 
       <BottomNav activeTab="agenda" onTabChange={onNavigate} />
     </div>
